@@ -1,3 +1,7 @@
+"""
+Convert a JSON file (list of objects) into a flattened CSV.
+"""
+
 import argparse
 import csv
 import json
