@@ -104,6 +104,18 @@ def main() -> int:
     )
     parser.add_argument("year", type=int, help="Year to fetch (e.g. 2025).")
     parser.add_argument(
+        "name",
+        nargs="?",
+        default=None,
+        help="Optional filename prefix (e.g. 'test' -> test_page_1.json).",
+    )
+    parser.add_argument(
+        "--name",
+        dest="name_flag",
+        default=None,
+        help="Optional filename prefix (same as positional 'name').",
+    )
+    parser.add_argument(
         "--out",
         type=Path,
         default=REPO_ROOT / "data" / "strava",
@@ -148,6 +160,10 @@ def main() -> int:
         raise SystemExit("--start-page must be >= 1.")
     if args.rpm < 1:
         raise SystemExit("--rpm must be >= 1.")
+
+    if args.name and args.name_flag:
+        raise SystemExit("Provide name either as positional or via --name, not both.")
+    name_prefix = (args.name_flag or args.name or "").strip()
 
     after, before = year_bounds_epoch(args.year)
     out_dir = args.out / str(args.year)
@@ -195,7 +211,8 @@ def main() -> int:
             print(f"No more activities. Last fetched page: {page - 1}")
             break
 
-        out_path = out_dir / f"page_{page}.json"
+        filename = f"page_{page}.json" if not name_prefix else f"{name_prefix}_page_{page}.json"
+        out_path = out_dir / filename
         out_path.write_text(json.dumps(result.payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
         usage = result.headers.get("X-RateLimit-Usage")
@@ -208,6 +225,7 @@ def main() -> int:
 
     meta = {
         "year": args.year,
+        "name": name_prefix or None,
         "after": after,
         "before": before,
         "per_page": args.per_page,
